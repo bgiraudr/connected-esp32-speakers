@@ -35,9 +35,12 @@ bool state = false;
 bool draw = false;
 
 bool deviceFound = false;
+bool instructionReceived = false;
 int rssiValue;
 
 bool bleConnected;
+
+#define M5NAME "M1";
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
 {
@@ -78,13 +81,20 @@ boolean reconnect()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
-    if (String(topic) == mqttGlobalTopic + "/" + macAddress + "/action")
+    if (String(topic) == mqttGlobalTopic + "/BEST")
     {
         String action = String(payload, length);
         Serial.println("Get action: " + action);
-        digitalWrite(ledPin, digitalRead(ledPin) == HIGH ? LOW : HIGH);
-        state = state ? false : true;
-        drawScreen();
+        if(action.equals("M1")) {
+            state = true;
+        } else {
+            state = false;
+        }
+
+        // digitalWrite(ledPin, digitalRead(ledPin) == HIGH ? LOW : HIGH);
+        // state = state ? false : true;
+        // drawScreen();
+        instructionReceived = true;
     }
 }
 
@@ -117,20 +127,19 @@ void setup()
 
 void loop()
 {
-    // lancer un nouveau scan
-    BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
-    Serial.print("Devices found: ");
-    Serial.println(foundDevices.getCount());
-    Serial.println("Scan done!");
-
-    // if(advertisedDevice.getAddress().toString() == BLE_MAC_ADDRESS) {
-    if (deviceFound)
-    {
-        // set connection to wifi
-
+    // bluetooth scan until the device is found
+    if(!deviceFound) {
+        // lancer un nouveau scan
+        BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
+        Serial.print("Devices found: ");
+        Serial.println(foundDevices.getCount());
+        Serial.println("Scan done!");
+    } else {
+        // the device has been found, we need to send signal to mqtt{
+        // deconnect the bluetooth
         BLEDevice::deinit();
-        bleConnected = false;
 
+        // connect to wifi
         WiFi.begin(ssid, password);
         WiFi.setAutoReconnect(true);
         while (WiFi.status() != WL_CONNECTED)
@@ -143,28 +152,44 @@ void loop()
 
         Serial.println("Wifi connected to address: " + WiFi.localIP().toString());
         macAddress = WiFi.macAddress();
-        reconnect();
+        
+        Serial.println("Connection to MQTT server at " + server.toString() + ":" + String(port));
+        if (client.connect(WiFi.macAddress().c_str()))
+        {
+            String subscribeTopic = String(mqttGlobalTopic) + "/" + macAddress + "/#";
+            Serial.println("M5Stack subscribed to the topic " + subscribeTopic);
+            client.subscribe(subscribeTopic.c_str());
+        }
 
-        // todo : try to connect to /action callback
-
-        String mqttTopic = mqttGlobalTopic + String("/") + WiFi.macAddress();
-        client.publish(mqttTopic.c_str(), std::to_string(rssiValue).c_str());
+        String mqttTopic = mqttGlobalTopic + String("/") + "M1";
+        // send to the mqtt client the power value
+        client.publish(mqttTopic.c_str(), std::to_string(rssiValue*-1).c_str());
         Serial.println(String(rssiValue) + " envoyé au serveur ! " + mqttTopic);
-        delay(1000);
-        WiFi.disconnect(true, true);
-        delay(200);
-    }
 
-    //   delay(2000); // attendre avant de scanner à nouveau
-    if (!bleConnected)
-    {
+        // wait for instruction callback
+        client.setServer(server, port);
+        client.setCallback(callback);
+        int m = 0;
+        while(!instructionReceived) {
+            Serial.println("waiting for instruction " + String(m));
+            m+=1;
+            client.loop();
+            delay(500);
+            if(m>=20) break;
+        }
+        Serial.println("Instruction Received !");
+        client.disconnect();
+        WiFi.disconnect(true, false);
+        delay(200);
+
+        // reconnect the bluetooth
         BLEDevice::init("");
-        bleConnected = true;
         deviceFound = false;
         pBLEScan = BLEDevice::getScan(); // créer un nouveau scan
         pBLEScan->setActiveScan(true);   // active scan utilise plus de puissance, mais obtient des résultats plus rapidement
         pBLEScan->setInterval(100);
         pBLEScan->setWindow(99); // moins d'intervalles minimise la probabilité de collision
         pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+        instructionReceived = false;
     }
 }
