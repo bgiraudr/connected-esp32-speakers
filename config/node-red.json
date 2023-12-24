@@ -1,0 +1,186 @@
+[
+    {
+        "id": "9318769a459c25ed",
+        "type": "tab",
+        "label": "Flux 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "59e65bdabe28a260",
+        "type": "mqtt out",
+        "z": "9318769a459c25ed",
+        "name": "",
+        "topic": "IOT/BEST",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "aa2f42580edb112a",
+        "x": 970,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "d6e83d242d51bc3e",
+        "type": "join",
+        "z": "9318769a459c25ed",
+        "name": "",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 360,
+        "y": 260,
+        "wires": [
+            [
+                "90a3674b9fdeaec1",
+                "40409c2cab6a07a7"
+            ]
+        ]
+    },
+    {
+        "id": "90a3674b9fdeaec1",
+        "type": "change",
+        "z": "9318769a459c25ed",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$reduce(\t    $keys(payload.$),\t    function($acc, $val, $i, $keys) {\t        $lookup(payload.$, $val) < $lookup(payload.$, $acc) ? $val : $acc\t    }\t)",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 670,
+        "y": 260,
+        "wires": [
+            [
+                "59e65bdabe28a260",
+                "106cff91172e4c06"
+            ]
+        ]
+    },
+    {
+        "id": "f7cd8da2abf90c80",
+        "type": "mqtt in",
+        "z": "9318769a459c25ed",
+        "name": "",
+        "topic": "IOT/M5/#",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "aa2f42580edb112a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 260,
+        "wires": [
+            [
+                "beba50df6ce0f1ac",
+                "d6e83d242d51bc3e"
+            ]
+        ]
+    },
+    {
+        "id": "beba50df6ce0f1ac",
+        "type": "debug",
+        "z": "9318769a459c25ed",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "40409c2cab6a07a7",
+        "type": "debug",
+        "z": "9318769a459c25ed",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "106cff91172e4c06",
+        "type": "debug",
+        "z": "9318769a459c25ed",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 880,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "aa2f42580edb112a",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "192.168.0.0",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
